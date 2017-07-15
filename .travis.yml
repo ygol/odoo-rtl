@@ -74,7 +74,6 @@ install:
   #- find ${HOME}/maintainer-quality-tools/travis -name test_flake8 -exec sed -i "s/get_modules_changed(os.path.abspath('.')/get_modules_changed(os.path.abspath('.'), 'origin\/' \+ os.environ['TRAVIS_BRANCH']/g" {} \;
   - export PATH=${HOME}/maintainer-quality-tools/travis:${PATH}
   - travis_install_nightly
-  - pip install humanize git+https://github.com/litnimax/PyAjam.git requests
 
 script:
   ## get modules changed and set environment variable INCLUDE_LINT
