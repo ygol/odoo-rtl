@@ -1,35 +1,93 @@
+# language: python
+# 
+# python:
+#   - "2.7"
+# 
+# sudo: false
+# cache: pip
+# 
+# addons:
+#   apt:
+#     packages:
+#       - expect-dev  # provide unbuffer utility
+#       - python-lxml # because pip installation is slow
+# 
+# env:
+#   - VERSION="10.0" TESTS="0" LINT_CHECK="0" TESTS=1
+#   - VERSION="10.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" TESTS=1
+# 
+# virtualenv:
+#   system_site_packages: true
+# 
+# install:
+#   - pip install anybox.testing.openerp
+#   - git clone https://github.com/it-projects-llc/maintainer-quality-tools.git ${HOME}/maintainer-quality-tools
+#   - export PATH=${HOME}/maintainer-quality-tools/travis:${PATH}
+#   - travis_install_nightly
+# 
+# script:
+#   - travis_run_tests
+# 
+# after_success:
+#   coveralls
+# 
+# notifications:
+# email: false
+
+### testinfg vauxoo file
+
 language: python
+
+sudo: false
+cache:
+  apt: true
+  directories:
+    - $HOME/.pip-cache/
 
 python:
   - "2.7"
 
-sudo: false
-cache: pip
+virtualenv:
+  system_site_packages: true
+
+env:
+  global:
+  - LINT_CHECK=0 ODOO_LINT=0 TESTS="0" VERSION="10.0" ODOO_REPO="vauxoo/odoo"
+
+  matrix:
+  - LINT_CHECK=1
+  - ODOO_LINT=1
+  - TESTS="1"
 
 addons:
   apt:
     packages:
-      - expect-dev  # provide unbuffer utility
-      - python-lxml # because pip installation is slow
-
-env:
-  - VERSION="10.0" TESTS="0" LINT_CHECK="0" TESTS=1
-  - VERSION="10.0" ODOO_REPO="odoo/odoo" LINT_CHECK="0" TESTS=1
-
-virtualenv:
-  system_site_packages: true
+      - expect-dev  # provides unbuffer utility
+      - python-lxml  # because pip installation is slow
+      - python-simplejson
+      - python-serial
+      - python-xlrd
 
 install:
-  - pip install anybox.testing.openerp
-  - git clone https://github.com/it-projects-llc/maintainer-quality-tools.git ${HOME}/maintainer-quality-tools
+  - git clone --single-branch --depth=1 https://github.com/vauxoo/maintainer-quality-tools.git -b master ${HOME}/maintainer-quality-tools
+  #- find ${HOME}/maintainer-quality-tools/travis -name test_flake8 -exec sed -i "s/get_modules/get_modules_changed/g" {} \;
+  #- find ${HOME}/maintainer-quality-tools/travis -name test_flake8 -exec sed -i "s/get_modules_changed(os.path.abspath('.')/get_modules_changed(os.path.abspath('.'), 'origin\/' \+ os.environ['TRAVIS_BRANCH']/g" {} \;
   - export PATH=${HOME}/maintainer-quality-tools/travis:${PATH}
   - travis_install_nightly
+  - pip install humanize git+https://github.com/litnimax/PyAjam.git requests
 
 script:
+  ## get modules changed and set environment variable INCLUDE_LINT
+  #- PYTHONPATH=${PATH} python -c "import getaddons;print 'export INCLUDE_LINT=\"' + ' '.join(getaddons.get_modules_changed('${TRAVIS_BUILD_DIR}', 'origin/${TRAVIS_BRANCH}')) + '\"'" >${TRAVIS_BUILD_DIR}/modules_changed.profile
+  #- PYTHONPATH=${PATH} python -c "import os, getaddons;print 'export INCLUDE=\"' + ','.join(map(os.path.basename, getaddons.get_modules_changed('${TRAVIS_BUILD_DIR}', 'origin/${TRAVIS_BRANCH}'))) + '\"'" >>${TRAVIS_BUILD_DIR}/modules_changed.profile
+  #- source ${TRAVIS_BUILD_DIR}/modules_changed.profile
+  ## If there isn't modules changed for lint checks then exit
+  #- if [[ "x${INCLUDE_LINT}" == "x" && "${TESTS}" == "0" ]]; then exit 0; fi
+  ## Travis tests disabled. Travis can't download private repositories.
+  #- if [[ "${TESTS}" == "1" && "${RUNBOT}" != "1" ]]; then exit 0; fi
+  #- travis_wait travis_run_tests
   - travis_run_tests
 
-after_success:
-  coveralls
 
-notifications:
-email: false
+after_success:
+  - travis_after_tests_success
